@@ -52,6 +52,7 @@ function run(command, args) {
 run('npm', ['ci', '--include=dev', '--ignore-scripts']);
 run('npm', ['run', 'db:generate']);
 run('node', ['scripts/release-schema-preflight.mjs']);
+run('node', ['scripts/meta-report-preflight.mjs']);
 run('npx', ['next', 'build', '--webpack']);
 run('node', ['scripts/release-http-smoke.mjs']);
-console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; analytics consent UI; no migrations or data writes`);
+console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; Meta reporting only; no migrations or data writes`);

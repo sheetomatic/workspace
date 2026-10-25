@@ -102,6 +102,11 @@
       "after": "c30f31cecc99a45a5a8d273bd73963d482559fd6a86b0f121832e9ff57d52de5"
     },
     {
+      "path": "scripts/meta-report-preflight.mjs",
+      "before": null,
+      "after": "2b67eef7481e39e14b9445f8288e46034478b55577132ba6c3fa071960fc4d64"
+    },
+    {
       "path": "scripts/pin-production-aliases.mjs",
       "before": null,
       "after": "bdae1c348542c62fdea886a5c38eb1714bf2177025d0fd60b5f00c2f670f8bc8"
@@ -114,7 +119,7 @@
     {
       "path": "scripts/release-http-smoke.mjs",
       "before": null,
-      "after": "7c8416c47fc4713cbc73f30fae48c349c25f34c40dbe64eef0342e97c1f068b4"
+      "after": "3ffe319ea4405a81fef8600012b1455c1d72295a5f9379f58421b22ee65925aa"
     },
     {
       "path": "scripts/release-schema-preflight.mjs",
@@ -345,6 +350,11 @@
       "path": "src/app/app/leads/drawer-actions.ts",
       "before": "3af2c2e72d4aff363b123a3771d64b7cb819c7b3",
       "after": "e78c4fce1900dc7850964dac557cd4a48adacb3eb9dbc715fe10e28593c8e62f"
+    },
+    {
+      "path": "src/app/app/leads/preleads/meta/page.tsx",
+      "before": null,
+      "after": "65ce170234b6b42e4b9b94e8729fd8153ab8a86ef76cb8499cf03196a3fda3dc"
     },
     {
       "path": "src/app/app/leads/preleads/page.tsx",
@@ -884,7 +894,7 @@
     {
       "path": "src/components/saas/website-traffic-dashboard.tsx",
       "before": null,
-      "after": "f1cbb39974f1ea90b87aafa1921d03398b7e556d9537da2b058ae8114a512f04"
+      "after": "ad954891dd203f8a0e6c765862687d1939742bfa3fbbaeb8d24efcec89099aae"
     },
     {
       "path": "src/components/saas/workspace-addons-panel.tsx",
@@ -1195,6 +1205,16 @@
       "path": "src/lib/marketing-navigation.ts",
       "before": null,
       "after": "c35b64cf241b787979fe8229a00831809869d6ab93d5b0da0f101f5901d7cbbe"
+    },
+    {
+      "path": "src/lib/meta-ads-report.test.ts",
+      "before": null,
+      "after": "42ee9ada5a6e4ab266a86d588832d478f0ec1fa58f2093cea8bfc6e7218f6949"
+    },
+    {
+      "path": "src/lib/meta-ads-report.ts",
+      "before": null,
+      "after": "4d6eee2336155caf57fa52de9c47b5ba0dee36203f0e6fa73c67c303affcd8cf"
     },
     {
       "path": "src/lib/org-plan-context.test.ts",
