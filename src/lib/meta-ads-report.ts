@@ -1,7 +1,7 @@
 import "server-only";
 export const META_REPORT_ACCOUNT = "1289822315977891";
 export type MetaSummary = { account_name?: string; date_start: string; date_stop: string; spend?: string; impressions?: string; reach?: string; clicks?: string; actions?: { action_type: string; value: string }[] };
-export async function metaAdsReport(): Promise<{ state: "ready"; rows: MetaSummary[] } | { state: "unconfigured" | "unavailable" }> {
+export async function metaAdsReport(): Promise<{ state: "ready"; rows: MetaSummary[] } | { state: "unconfigured" } | { state: "unavailable" }> {
   const token = process.env.META_ADS_ACCESS_TOKEN;
   if (!token) return { state: "unconfigured" };
   try {
