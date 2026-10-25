@@ -306,6 +306,10 @@ export async function recordCapturedPayment(
     }
     return tx.templateCheckout.findUniqueOrThrow({ where: { id: order.id } });
   });
+  // A different captured payment may have won while this request fetched Razorpay.
+  // Never acknowledge that second payment as the invoice's recorded payment.
+  if (paid.gatewayPaymentId !== paymentId)
+    throw new Error("Payment does not match this invoice.");
   return paid;
 }
 
