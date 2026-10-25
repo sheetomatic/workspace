@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, ArrowUpRight, BarChart3, Eye, MousePointer2, RefreshCw, ShieldCheck, Users, Wallet } from "lucide-react";
+import { ArrowLeft, ChevronDown, BarChart3, Eye, MousePointer2, RefreshCw, ShieldCheck, Users, Wallet } from "lucide-react";
 import type { metaAdsReport } from "@/lib/meta-ads-report";
 import styles from "./meta-dashboard.module.css";
 import { PreleadsTabs } from "./preleads-tabs";
@@ -37,7 +37,21 @@ export function MetaDashboard({ report, days, ads }: { report: Report; days: 7 |
       <section className={styles.metrics} aria-label="Performance summary">{cards.map(card=><article className={styles.card} key={card.title}><div className={styles.cardTop}><h2>{card.title}</h2><span className={styles[card.tone]}><card.icon size={19}/></span></div><strong>{card.value}</strong><p>{card.note}</p></article>)}</section>
       <div className={styles.chartGrid}><section className={styles.panel}><div className={styles.panelHead}><div><h2>Performance over time</h2><p>Daily activity reported by Meta</p></div><div className={styles.tabs} role="group" aria-label="Chart metric">{(["impressions","spend","clicks"] as const).map(m=><button key={m} aria-pressed={metric===m} onClick={()=>setMetric(m)}>{m}</button>)}</div></div>
         {daily === null ? <p className={styles.chartEmpty}>Daily details could not be loaded. Summary totals above are still available.</p> : !points.length ? <p className={styles.chartEmpty}>No daily activity was returned for this period.</p> : <><div className={styles.chart} role="img" aria-label={`Daily ${metric}. Exact values are available in the daily breakdown below.`}><div className={styles.scale}><span>{metric === "spend" ? money(max) : count(max)}</span><span>{metric === "spend" ? money(max/2) : count(Math.round(max/2))}</span><span>0</span></div><div className={styles.plot}>{points.map(p=><div className={styles.barSlot} key={p.date_start}><div className={styles.bar} style={{height:`${(number(p[metric])??0)/max*100}%`}} title={`${date(p.date_start)} · ${metric === "spend" ? money(number(p[metric])) : count(number(p[metric]))}`}/></div>)}</div></div><div className={styles.axis}><span>{date(points[0].date_start)}</span><span>{date(points[points.length-1].date_start)}</span></div><p className={styles.chartNote}>Only dates returned by Meta are plotted; missing dates are not invented as zeroes.</p><details className={styles.details}><summary>View daily breakdown</summary><div className={styles.tableWrap}><table><thead><tr><th>Date</th><th>Impressions</th><th>Spend</th><th>Clicks</th></tr></thead><tbody>{points.map(p=><tr key={p.date_start}><td>{date(p.date_start)}</td><td>{count(number(p.impressions))}</td><td>{money(number(p.spend))}</td><td>{count(number(p.clicks))}</td></tr>)}</tbody></table></div></details></>}
-      </section><section className={styles.panel}><div className={styles.panelHead}><div><h2>Audience actions</h2><p>How people interacted with your ads</p></div><ArrowUpRight size={21}/></div>{actions.length ? actions.map(a=><div className={styles.action} key={a.action_type}><div><span>{actionLabels[a.action_type] ?? a.action_type.replaceAll("_"," ")}</span><strong>{count(number(a.value))}</strong></div><div className={styles.actionTrack}><span style={{width:`${(number(a.value)??0)/actionMax*100}%`}}/></div></div>) : <p className={styles.chartEmpty}>No actions were reported.</p>}<p className={styles.actionNote}>These categories can overlap. They are not added together as unique leads.</p></section></div>
+      </section><section className={styles.panel}>
+        <details className={styles.audienceDetails}>
+          <summary>
+            <span><span className={styles.audienceTitle}>Audience actions</span><span className={styles.audienceHint}>View action details and reporting notes</span></span>
+            <ChevronDown size={21} aria-hidden="true"/>
+          </summary>
+          <div className={styles.audienceBody}>
+            <h2>Audience action details</h2>
+            <p>Aggregate activity reported by Meta for {date(row.date_start)} – {date(row.date_stop)}, {row.date_stop.slice(0,4)}. These are actions, not a list of identifiable visitors.</p>
+            {actions.length ? <div className={styles.tableWrap}><table><caption>Exact action counts for the selected period</caption><thead><tr><th scope="col">Action / Meta field</th><th scope="col">Count</th></tr></thead><tbody>{actions.map(a => <tr key={a.action_type}><td>{actionLabels[a.action_type] ?? a.action_type.replaceAll("_", " ")}<br/><code>{a.action_type}</code></td><td>{count(number(a.value))}</td></tr>)}</tbody></table></div> : <p>No action details were returned for this period.</p>}
+            <p>Link clicks are not confirmed website visits. Post and page engagements may include the same interaction. Do not add these categories together as unique people or leads.</p>
+            <p>Meta does not provide individual names, phone numbers or email addresses in this aggregate report. Website subscribers and submitted leads are separate records.</p>
+          </div>
+        </details>
+        {actions.length ? actions.map(a=><div className={styles.action} key={a.action_type}><div><span>{actionLabels[a.action_type] ?? a.action_type.replaceAll("_"," ")}</span><strong>{count(number(a.value))}</strong></div><div className={styles.actionTrack}><span style={{width:`${(number(a.value)??0)/actionMax*100}%`}}/></div></div>) : <p className={styles.chartEmpty}>No actions were reported.</p>}<p className={styles.actionNote}>These categories can overlap. They are not added together as unique leads.</p></section></div>
       <section className={styles.efficiency}><div><span>Click-through rate</span><strong>{ctr}</strong><p>All clicks ÷ impressions</p></div><div><span>Cost per click</span><strong>{cpc}</strong><p>Ad spend ÷ all clicks</p></div><div className={styles.context}><ShieldCheck size={22}/><p>Connected directly to Meta Insights.<br/>Your budgets and ads are never changed here.</p></div></section>
     </>}
     <section className={styles.panel} style={{marginTop:22}}><div className={styles.panelHead}><div><h2>Ad-by-ad performance</h2><p>Compare individual ads across campaigns. Summary cards above cover the whole account.</p></div></div>
