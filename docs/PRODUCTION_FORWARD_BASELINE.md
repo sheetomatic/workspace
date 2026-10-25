@@ -1,5 +1,12 @@
 # Current verified production checkpoint — 25 October 2026
 
+- Current live domains: `dpl_7en6keCCLUK9BVrKpdipbHJjRdaT`, exact application `658b1a2023d0d5d93613fb4e01464ef4f16a9353`, branch `codex/meta-dashboard-polish-20261025`, PR #82.
+- Meta canvas: responsive KPI cards, INR/count formatting, actual daily Insights chart, metric switches, accessible exact-value table, 7/30-day filters, action bars and labelled CTR/CPC. Period reach is never summed from daily rows. Missing daily reporting is not fabricated.
+- 554 unit tests, lint, full local/staged 254-page build/typecheck, 283 checksum verification, schema compatibility and all 19 staged smoke checks passed. Production token passed summary and daily Insights access. Isolated authenticated browser checks at 1440/1024/390/320 passed metrics, chart/period controls, table and no overflow/errors. Signed-in production UI not inspected; live page is auth-protected.
+- No migrations, customer writes, payment activation, campaign changes, credentials, subscriber rollout or logo rollout. Preserves the previous source below. Both domains assigned and re-read; public homepage/pricing/login remain available.
+
+## Previous Meta reporting checkpoint — 25 October 2026 (superseded)
+
 - Both aliases verified on `dpl_9RB64mKZX4tBDFskFm4e77PKeRZi`, actual source `ccfd80e6b23dc2dc58efea35f43028873bec8c72`, branch `codex/meta-stats-only-20261025`, PR #81.
 - Adds primary-admin-only Meta statistics at `/app/leads/preleads/meta` linked from Preleads; selected account 1289822315977891 only. Deployment's own token passed read-only Meta Insights verification. No new scopes, credentials, ad spend, migrations, payments or messages.
 - 551 tests passed; subsequent union-narrowing fix passed report tests and full 254-page build/typecheck. All 19 staged route smokes, source hashes and database compatibility passed. Isolated authenticated desktop/mobile UI renders real Meta data without errors/overflow. Live public routes and login passed; Meta route correctly requires authentication. Signed-in production browser verification unavailable.
