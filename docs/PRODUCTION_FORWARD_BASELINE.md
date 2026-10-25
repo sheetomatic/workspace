@@ -1,5 +1,13 @@
 # Current verified production checkpoint — 25 October 2026
 
+- Both domains now verified on `dpl_9a88nq7gBnWHsm8hn4rbmVhwtc8m`, application `4b1898688f3c6b3ea122b7935ee2251cf05bc0b8`, branch `codex/preleads-hub-20261025`, PR #83.
+- Shared Preleads tabs (Meta, Website Traffic, Subscribers), matching canvas, ad-level performance comparison, public double-opt-in subscription form and admin newsletter stats. Newsletter signups are not Workspace registrations. Per-ad rows are historical Insights, not live delivery states; partial results beyond 100 are disclosed.
+- Scoped additive WebsiteSubscriber table and migration bookkeeping applied; no existing leads/accounts rewritten. No bulk mail, payment activation, ad writes, credential changes or general migrations. Production schema/email-config and all Meta read preflights passed. Real email deliverability not tested.
+- 578 unit tests and four isolated Postgres tests passed; full 257-page local/staged build and 23 smoke/auth/origin checks passed. Authenticated isolated browser checks at 1440/390/320 covered tabs, reports and mock signup/confirmation. Live HTTP verifies subscription markup and protected routes. Live Chromium CA error prevented additional browser inspection; no TLS bypass used.
+- Pending subscriber work in the old consolidated-release worktree is incorporated. Do not ship that stale checkout. Logo work remains separate. Preserve exact-source guarded deployments and verify build logs, not metadata alone.
+
+## Previous Meta canvas checkpoint — 25 October 2026 (superseded)
+
 - Current live domains: `dpl_7en6keCCLUK9BVrKpdipbHJjRdaT`, exact application `658b1a2023d0d5d93613fb4e01464ef4f16a9353`, branch `codex/meta-dashboard-polish-20261025`, PR #82.
 - Meta canvas: responsive KPI cards, INR/count formatting, actual daily Insights chart, metric switches, accessible exact-value table, 7/30-day filters, action bars and labelled CTR/CPC. Period reach is never summed from daily rows. Missing daily reporting is not fabricated.
 - 554 unit tests, lint, full local/staged 254-page build/typecheck, 283 checksum verification, schema compatibility and all 19 staged smoke checks passed. Production token passed summary and daily Insights access. Isolated authenticated browser checks at 1440/1024/390/320 passed metrics, chart/period controls, table and no overflow/errors. Signed-in production UI not inspected; live page is auth-protected.
