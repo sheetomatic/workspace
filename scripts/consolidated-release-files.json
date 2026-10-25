@@ -77,9 +77,14 @@
       "after": "71dac69f4190f5f8021119d218e8032d90419fcae9f29b6dd7ee745e0153395b"
     },
     {
+      "path": "prisma/migrations/20261025120000_website_subscribers/migration.sql",
+      "before": null,
+      "after": "fb640cf180707a38afe98f252e7d39acf8e2f11bb850bc402fb213da012af8a9"
+    },
+    {
       "path": "prisma/schema.prisma",
       "before": "66aeb8ffe8f2d264023da5e05ed038b0bd6d0044",
-      "after": "0afcbe0b57c188757a1f53d15be40e7187e9ee5d244dad1c5eb196f7ea61c3d7"
+      "after": "3626b643247b7b2348cc1c77c0d1010b118534326dd66ccb48ffdec3090410ea"
     },
     {
       "path": "public/contact/sheetomatic-contact-qr.svg",
@@ -97,6 +102,11 @@
       "after": "5d1addd3d1bf8f54139233419f87d2932e37af9a6b520c959b188b9362457c47"
     },
     {
+      "path": "scripts/ensure-website-subscribers.mjs",
+      "before": null,
+      "after": "948f2b1750b95394b80f30a5359ec964c6a4bac41926819c50b7981740cf7aeb"
+    },
+    {
       "path": "scripts/ensure-website-traffic.mjs",
       "before": null,
       "after": "c30f31cecc99a45a5a8d273bd73963d482559fd6a86b0f121832e9ff57d52de5"
@@ -104,7 +114,7 @@
     {
       "path": "scripts/meta-report-preflight.mjs",
       "before": null,
-      "after": "4c3d92b484ed74271ab98b220b377090a1df51bf4ed681b333065f0ed146bb9a"
+      "after": "340ff5b4a450957de65641fa53d4deb0581603d8fcf6aefc191415fb01c4ecc6"
     },
     {
       "path": "scripts/pin-production-aliases.mjs",
@@ -119,7 +129,7 @@
     {
       "path": "scripts/release-http-smoke.mjs",
       "before": null,
-      "after": "3ffe319ea4405a81fef8600012b1455c1d72295a5f9379f58421b22ee65925aa"
+      "after": "57270a3227accb2b32a3ce1367f7d390a1e83deb7d7d30039b9e6cbd3a500dc2"
     },
     {
       "path": "scripts/release-schema-preflight.mjs",
@@ -257,6 +267,21 @@
       "after": "a833e0d879c389158647cc67464940073154459f327e096d22d558686a2c7228"
     },
     {
+      "path": "src/app/api/updates/manage/route.ts",
+      "before": null,
+      "after": "bba095eda2b437c5b6928350107d760247d7f503e139d5e9aed499785cafdd02"
+    },
+    {
+      "path": "src/app/api/updates/subscribe/route.test.ts",
+      "before": null,
+      "after": "56915dc5040f0338235d490b891991577735a117303b4bb6fe099dac8df3d8ab"
+    },
+    {
+      "path": "src/app/api/updates/subscribe/route.ts",
+      "before": null,
+      "after": "55a5077e025bbe89134b18881b0fc1023a3953c0b9ed8e10263bcd91f460a374"
+    },
+    {
       "path": "src/app/api/website-traffic/route.test.ts",
       "before": null,
       "after": "e38a971d133c45ae4994bb26c7b7cab62697914a01f17bd148b7d56650aac70d"
@@ -354,12 +379,17 @@
     {
       "path": "src/app/app/leads/preleads/meta/page.tsx",
       "before": null,
-      "after": "4c7bea27f8e7dcf91667c2a03b2456163cff527db561caecaa738ad5a63f55cd"
+      "after": "f53cf9471be803ee703876513bbaa3f5589b69473ae71832293a5c37c4cf05bb"
     },
     {
       "path": "src/app/app/leads/preleads/page.tsx",
       "before": null,
       "after": "4513c07ce4466567a7df77db98156fc0c1d7f8a0d3eb9bebd458f99ff261a066"
+    },
+    {
+      "path": "src/app/app/leads/preleads/subscribers/page.tsx",
+      "before": null,
+      "after": "c646840464249b9ed7b24c8fd9d7e896ea5f2abb36fdd24f786f8e6fdfe01ab9"
     },
     {
       "path": "src/app/app/page.tsx",
@@ -444,7 +474,7 @@
     {
       "path": "src/app/components.tsx",
       "before": "0271db502161eb7082720cafb509ad9d1a1aaf74",
-      "after": "20fce5080ed0f1f2666e274cd474be86864bc96440c6eeb0d3562a96cf11b8e3"
+      "after": "c66d6a8a8df74492c3d6537c49228461b0878deef096ec008e3153d9e3191040"
     },
     {
       "path": "src/app/contact/page.tsx",
@@ -540,6 +570,11 @@
       "path": "src/app/templates/page.tsx",
       "before": "53e278c06ae09c3f597aaefafc07da3183b227d8",
       "after": "d921293c3999e9a0fd1006021ad4671e77e27a4381d1d693a49e419573b75f9f"
+    },
+    {
+      "path": "src/app/updates/manage/page.tsx",
+      "before": null,
+      "after": "ffcb17b7fb540186f27ac2bcb11c06b78d251db4b4353f5625bfbc81c0506f1b"
     },
     {
       "path": "src/app/video-content.ts",
@@ -827,6 +862,21 @@
       "after": "1fd700cf3fe61f60935a76c6b411f6168f246559042d750a7acfc78bcfaa1d95"
     },
     {
+      "path": "src/components/marketing/website-updates-manage.tsx",
+      "before": null,
+      "after": "7efe342729d596710b94a8ae3aea2a47a47fc4ecd6e3a22fa223e7dbc3ad7561"
+    },
+    {
+      "path": "src/components/marketing/website-updates-signup.tsx",
+      "before": null,
+      "after": "1414201f12026e97e35fe47bca68dc9ff480aa3b4ae52273eeed2c278bfd5e05"
+    },
+    {
+      "path": "src/components/marketing/website-updates.module.css",
+      "before": null,
+      "after": "7480e43078b465de8d094632e3d86de17260f0c7c217d9a1db3f6ec5de2bf020"
+    },
+    {
       "path": "src/components/marketing/whatsapp-plans-showcase.tsx",
       "before": "1939c30c1b02af49ad62610e11f417b42aa78c4f",
       "after": "8a8c030061b7007edc6b22e14850d600255d2318ccbfd169c9780d2c715acc00"
@@ -889,7 +939,17 @@
     {
       "path": "src/components/saas/meta-dashboard.tsx",
       "before": null,
-      "after": "439b8ccd5f3ceea8e259268b8667650769a626d1cd7e18492bef8999f7bbcd0c"
+      "after": "975645a166cd5962f3ffdca119dd5e234a6318c9655c74540d2e4c6dea1b2deb"
+    },
+    {
+      "path": "src/components/saas/preleads-tabs.module.css",
+      "before": null,
+      "after": "6ab97598601366da782d0cef7c7595484d6064dfef92f23921017d6a75e382fe"
+    },
+    {
+      "path": "src/components/saas/preleads-tabs.tsx",
+      "before": null,
+      "after": "4423b6f417564aa68471e3b36c9c9f73722ec2139d9474246e6daffc001aafbd"
     },
     {
       "path": "src/components/saas/tasks-module-nav.tsx",
@@ -899,12 +959,12 @@
     {
       "path": "src/components/saas/website-traffic-dashboard.module.css",
       "before": null,
-      "after": "06cba6103c3ef6fc56d74ef01f9a06f7a06d85142f6ac75562a14e67cdc3c82c"
+      "after": "b59c6c3ee60f10cb6e8ac6300c86d432513963fad3b22d7002f501ff34506b00"
     },
     {
       "path": "src/components/saas/website-traffic-dashboard.tsx",
       "before": null,
-      "after": "ad954891dd203f8a0e6c765862687d1939742bfa3fbbaeb8d24efcec89099aae"
+      "after": "86facd7f1558575f817c6336a659b6e42d502940e3eca9b5515ac3b75f414355"
     },
     {
       "path": "src/components/saas/workspace-addons-panel.tsx",
@@ -1217,6 +1277,16 @@
       "after": "c35b64cf241b787979fe8229a00831809869d6ab93d5b0da0f101f5901d7cbbe"
     },
     {
+      "path": "src/lib/meta-ads-breakdown.test.ts",
+      "before": null,
+      "after": "f4263fd4771814822e244336369a23a5978bc55aea8e583e915ce7bc7196a32a"
+    },
+    {
+      "path": "src/lib/meta-ads-breakdown.ts",
+      "before": null,
+      "after": "fedab76dac3371688f2b2cec1e974dc66d2147e4520b3fa740d827e28a5cb268"
+    },
+    {
       "path": "src/lib/meta-ads-report.test.ts",
       "before": null,
       "after": "a216c732848939349c93678d882b8711e720040f63675a0f86a7ff07b5bc8250"
@@ -1325,6 +1395,31 @@
       "path": "src/lib/website-traffic-report.ts",
       "before": null,
       "after": "2299da1053e50630fd3e30c60358db681ea2c86388129796788dbe546f32d6c2"
+    },
+    {
+      "path": "src/lib/website-updates-http.ts",
+      "before": null,
+      "after": "09219c54d1bfa5fbb75d4f5c1309b1492bcb771b4b416ac94b1ae0d2e2af6a3d"
+    },
+    {
+      "path": "src/lib/website-updates-input.ts",
+      "before": null,
+      "after": "15583c53571ab016fde3e33e3011b63439701a77dd0c7500954d9a97d0aff4a6"
+    },
+    {
+      "path": "src/lib/website-updates.integration.test.ts",
+      "before": null,
+      "after": "559da271c24723fec626c7feb8ddc5048b1f819de56ec1c32ae9c524eff6b406"
+    },
+    {
+      "path": "src/lib/website-updates.test.ts",
+      "before": null,
+      "after": "3a574d59a264afbdf7affa9b6b02d337d197f6cfbfcbd0a46ada78bef6d913a5"
+    },
+    {
+      "path": "src/lib/website-updates.ts",
+      "before": null,
+      "after": "41c8a87f3f8e67161687a7d5fb81f7b5121f244e196612928c096615cf728ec3"
     },
     {
       "path": "src/lib/work/my-today.ts",

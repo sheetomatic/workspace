@@ -1,0 +1,16 @@
+.signup { border: 1px solid #d6e4ed; border-radius: 18px; background: #f0f6fa; color: #183447; padding: 24px; margin-bottom: 32px; }
+.signup h2 { color: #183447; font-size: 23px; font-weight: 750; line-height: 1.3; margin: 0 0 8px; }
+.signup p { color: #516a7c; font-size: 14px; line-height: 1.6; margin: 8px 0; }
+.fields { display: grid; grid-template-columns: 1fr 1.5fr auto; align-items: end; gap: 12px; margin-top: 18px; }
+.fields label { display: grid; gap: 6px; font-size: 13px; font-weight: 650; }
+.fields input { background: #fff; color: #173448; border: 1px solid #adc1ce; border-radius: 9px; padding: 11px 12px; min-height: 44px; width: 100%; min-width: 0; font-size: 16px; }
+.signup button, .manage button { background: #124e6c; color: white; border: 1px solid #124e6c; border-radius: 9px; min-height: 44px; padding: 11px 20px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.signup button:disabled, .manage button:disabled { opacity: .6; cursor: wait; }
+.consent { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.6; margin-top: 14px; }
+.consent input { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: #124e6c; }
+.signup a { color: #124e6c; text-decoration: underline; }
+.trap { display: none; }
+.signup :is(input,button,a):focus-visible, .manage button:focus-visible { outline: 3px solid #3981ad; outline-offset: 3px; }
+.manage { max-width: 600px; margin: 60px auto; padding: 28px; border: 1px solid #d6e4ed; border-radius: 18px; background: white; color: #183447; }
+.manage h1 { font-size: 28px; font-weight: 750; }.manage p { margin: 16px 0; line-height: 1.6; }
+@media(max-width:700px) { .fields { grid-template-columns:1fr; }.signup { padding:18px; } }

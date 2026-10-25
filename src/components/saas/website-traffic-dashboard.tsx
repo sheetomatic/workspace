@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { requireBannerAdmin } from "@/lib/marketing-banner-store";
 import { trafficDays, trafficWindow } from "@/lib/website-traffic-report";
 import styles from "./website-traffic-dashboard.module.css";
+import { PreleadsTabs } from "./preleads-tabs";
 
 export async function WebsiteTrafficDashboard({ days, basePath }: { days: number; basePath: string }) {
   await requireBannerAdmin();
@@ -20,7 +21,7 @@ export async function WebsiteTrafficDashboard({ days, basePath }: { days: number
     ]);
     data = { views, visitors: Number(totals[0]?.visitors ?? 0), pageCount: Number(totals[0]?.pages ?? 0), pages, sources, daily, recent };
   } catch {
-    return <div className={styles.dashboard}><h1>CRM · Preleads</h1><div className={styles.notice}>Website traffic could not be loaded. This is a reporting error, not zero traffic. <a href={basePath}>Retry</a></div></div>;
+    return <div className={styles.dashboard}><PreleadsTabs active="traffic" days={days}/><h1>CRM · Preleads</h1><div className={styles.notice}>Website traffic could not be loaded. This is a reporting error, not zero traffic. <a href={basePath}>Retry</a></div></div>;
   }
   const trend = trafficDays(data.daily, days, now);
   const peak = Math.max(1, ...trend.map(day => day.views));
@@ -33,6 +34,7 @@ export async function WebsiteTrafficDashboard({ days, basePath }: { days: number
     { label: "Traffic sources", value: data.sources.length, note: "Recorded referral categories" },
   ];
   return <div className={styles.dashboard}>
+    <PreleadsTabs active="traffic" days={days}/>
     <header className={styles.header}><div><p className={styles.muted}>CRM / Preleads</p><h1>Website traffic dashboard</h1><p className={styles.muted}>Understand the visits before an enquiry. Last {days} days, including today · IST</p></div><nav className={styles.actions} aria-label="Reporting period"><a href={`${basePath}?days=7`} aria-current={days === 7}>7 days</a><a href={`${basePath}?days=30`} aria-current={days === 30}>30 days</a><a href={`${basePath}?days=${days}`}>Refresh</a></nav></header>
     <div className={styles.metrics}>{metrics.map(metric => <section className={styles.card} key={metric.label}><h2>{metric.label}</h2><strong>{metric.value.toLocaleString("en-IN")}</strong><p className={styles.muted}>{metric.note}</p></section>)}</div>
     {!data.views && <div className={styles.notice}><strong>No consented visits recorded in this period yet.</strong><p>Collection starts after visitors allow analytics on the public website. Declined consent, blocked analytics and Workspace/CRM activity are excluded. Historical visits cannot be reconstructed.</p><a href="https://sheetomatic.com" target="_blank" rel="noopener noreferrer">Open public website ↗</a></div>}

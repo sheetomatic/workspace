@@ -4349,6 +4349,22 @@ model WebsitePageView {
   @@index([visitorHash, createdAt])
 }
 
+model WebsiteSubscriber {
+  id                    String   @id @default(cuid())
+  email                 String   @unique
+  name                  String?
+  status                String   @default("PENDING")
+  consentVersion        String
+  requestedAt           DateTime @default(now())
+  confirmedAt           DateTime?
+  unsubscribedAt        DateTime?
+  confirmationHash      String?  @unique
+  confirmationExpiresAt DateTime?
+  unsubscribeToken      String   @unique
+  lastConfirmationAt    DateTime @default(now())
+  @@index([status, requestedAt])
+}
+
 model GoogleCalendarConnection {
   id             String   @id
   organizationId String

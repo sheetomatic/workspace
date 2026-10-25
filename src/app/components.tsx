@@ -11,6 +11,7 @@ import {
   footerProductLinks,
 } from "./page-content";
 import { SiteHeaderNav } from "@/components/marketing/site-header-nav";
+import { WebsiteUpdatesSignup } from "@/components/marketing/website-updates-signup";
 import { BrandIconMark } from "@/components/brand/brand-icon-mark";
 import {
   finalCtaContent,
@@ -119,6 +120,7 @@ export function SiteFooter() {
   return (
     <footer className="site-footer-saas">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8">
+        <WebsiteUpdatesSignup />
         <div className="site-footer-grid site-footer-minimal">
           <div className="site-footer-brand">
             <SiteBrand variant="footer" />

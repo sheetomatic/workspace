@@ -13,3 +13,7 @@ if (!daily.ok) throw Error(`Meta daily reporting check failed (HTTP ${daily.stat
 const detail = await daily.json();
 if (!Array.isArray(detail.data) || detail.paging?.next) throw Error('Daily reporting incomplete');
 console.log('[meta-report-preflight] PASS daily Insights access');
+const ads = await fetch('https://graph.facebook.com/v23.0/act_1289822315977891/insights?level=ad&fields=ad_id,ad_name,spend,impressions,reach,clicks&date_preset=last_30d&limit=100',{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(15000)});
+if(!ads.ok)throw Error(`Meta ad reporting check failed (HTTP ${ads.status})`);
+if(!Array.isArray((await ads.json()).data))throw Error('Invalid ad reporting response');
+console.log('[meta-report-preflight] PASS ad-level Insights access');
