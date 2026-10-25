@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { isPublicAnalyticsPath, META_PIXEL_ID, safePixelContext, trafficSource } from "@/lib/website-analytics";
+import styles from "./website-analytics.module.css";
 
 type Pixel = ((...args: unknown[]) => void) & {queue?: unknown[][];callMethod?: (...args: unknown[]) => void;loaded?: boolean;version?: string;push?: Pixel};
 declare global { interface Window { fbq?: Pixel; _fbq?: Pixel; } }
@@ -50,10 +51,13 @@ export function WebsiteAnalytics() {
     try {localStorage.setItem(choiceKey,value);if(value!=="accepted")localStorage.removeItem("sheetomatic-traffic-visitor");} catch {}
     setChoice(value);setSettings(false);
   }
-  return <aside aria-label="Analytics preferences" style={{position:"fixed",bottom:12,left:12,zIndex:90,maxWidth:"min(420px, calc(100vw - 24px))",padding:12,borderRadius:12,background:"#fff",color:"#172033",boxShadow:"0 2px 12px #0002"}}>
-    {choice && !settings ? <button type="button" onClick={()=>setSettings(true)}>Privacy preferences</button> : <>
-      <p>Allow website measurement and Meta advertising analytics? This uses a random browser identifier and shares browsing information with Meta. No form entries are included. <a href="/privacy">Privacy policy</a></p>
-      <button type="button" onClick={()=>save("accepted")}>Allow analytics</button>{" "}<button type="button" onClick={()=>save("declined")}>Decline</button>
+  return <aside aria-label="Analytics preferences" className={`${styles.container} ${choice && !settings ? styles.preferences : styles.panel}`}>
+    {choice && !settings ? <button type="button" onClick={()=>setSettings(true)}><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z" /></svg>Privacy preferences</button> : <>
+      <div className={styles.heading}><span className={styles.icon}><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z" /><path d="m8 12 3 3 5-6" /></svg></span><h2>Website analytics</h2></div>
+      <p className={styles.description}>Allow website measurement and Meta advertising analytics? We use a random browser identifier and share browsing information with Meta. No form entries are included.</p>
+      <a className={styles.policy} href="/privacy">Privacy policy</a>
+      <div className={styles.actions}><button className={styles.allow} type="button" onClick={()=>save("accepted")}>Allow analytics</button><button className={styles.decline} type="button" onClick={()=>save("declined")}>Decline</button></div>
+      <p className={styles.note}>Optional. You can change your choice anytime in Privacy preferences.</p>
     </>}
   </aside>;
 }

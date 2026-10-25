@@ -54,4 +54,4 @@ run('npm', ['run', 'db:generate']);
 run('node', ['scripts/release-schema-preflight.mjs']);
 run('npx', ['next', 'build', '--webpack']);
 run('node', ['scripts/release-http-smoke.mjs']);
-console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; header navigation polish; no migrations or data writes`);
+console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; analytics consent UI; no migrations or data writes`);

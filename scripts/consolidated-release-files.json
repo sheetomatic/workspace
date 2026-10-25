@@ -807,9 +807,14 @@
       "after": "61a36507b34c5e544a35fc2f9fc26c4d85976a63773e2e88f0df345c9b626a45"
     },
     {
+      "path": "src/components/marketing/website-analytics.module.css",
+      "before": null,
+      "after": "61655387e47c63d29a610646a9582e72ed93dd5c0e65984a2a657e2188c83b36"
+    },
+    {
       "path": "src/components/marketing/website-analytics.tsx",
       "before": null,
-      "after": "b125d3a42dfae0fecd8dbb5bafe5170973a2e1d97f6ec452fd3a9958ba894e73"
+      "after": "1fd700cf3fe61f60935a76c6b411f6168f246559042d750a7acfc78bcfaa1d95"
     },
     {
       "path": "src/components/marketing/whatsapp-plans-showcase.tsx",
