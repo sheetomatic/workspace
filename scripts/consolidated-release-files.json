@@ -104,7 +104,7 @@
     {
       "path": "scripts/meta-report-preflight.mjs",
       "before": null,
-      "after": "2b67eef7481e39e14b9445f8288e46034478b55577132ba6c3fa071960fc4d64"
+      "after": "4c3d92b484ed74271ab98b220b377090a1df51bf4ed681b333065f0ed146bb9a"
     },
     {
       "path": "scripts/pin-production-aliases.mjs",
@@ -354,7 +354,7 @@
     {
       "path": "src/app/app/leads/preleads/meta/page.tsx",
       "before": null,
-      "after": "65ce170234b6b42e4b9b94e8729fd8153ab8a86ef76cb8499cf03196a3fda3dc"
+      "after": "4c7bea27f8e7dcf91667c2a03b2456163cff527db561caecaa738ad5a63f55cd"
     },
     {
       "path": "src/app/app/leads/preleads/page.tsx",
@@ -882,6 +882,16 @@
       "after": "1267a85f6e03b64ce6a4c06eae7b501c75bfae2b5d46419c3c43594e109b32d8"
     },
     {
+      "path": "src/components/saas/meta-dashboard.module.css",
+      "before": null,
+      "after": "c5fbdb15dd72c4ee9fb081916a2c50b60c9f0e45ca25589641b9f3f4eb7366cd"
+    },
+    {
+      "path": "src/components/saas/meta-dashboard.tsx",
+      "before": null,
+      "after": "439b8ccd5f3ceea8e259268b8667650769a626d1cd7e18492bef8999f7bbcd0c"
+    },
+    {
       "path": "src/components/saas/tasks-module-nav.tsx",
       "before": "5fa7385f3b3b4183912a11a94e2d39712199f490",
       "after": "3b1629a0ea25ec6aeca4f85e05171e020866d4639ffe951e580d2731326fe344"
@@ -1209,12 +1219,12 @@
     {
       "path": "src/lib/meta-ads-report.test.ts",
       "before": null,
-      "after": "42ee9ada5a6e4ab266a86d588832d478f0ec1fa58f2093cea8bfc6e7218f6949"
+      "after": "a216c732848939349c93678d882b8711e720040f63675a0f86a7ff07b5bc8250"
     },
     {
       "path": "src/lib/meta-ads-report.ts",
       "before": null,
-      "after": "4d6eee2336155caf57fa52de9c47b5ba0dee36203f0e6fa73c67c303affcd8cf"
+      "after": "e87e1e508772f55607558d848865e1e324f9690d3ed4fb487788183d7a2aa810"
     },
     {
       "path": "src/lib/org-plan-context.test.ts",
