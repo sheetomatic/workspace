@@ -1,5 +1,13 @@
 # Current verified production checkpoint — 26 October 2026
 
+- Both domains verified on `dpl_Fo95TGLV5jAja9cFcJtDiEZt7hDy`, actual application source `886355e1232bf62f4b561851bd9d8ad1f2fd6f1c`, branch `codex/crm-focus-20261026`, PR #87.
+- Leads is month-to-date in IST, including search; older and parked records appear in paginated Next Time. Original statuses, notes, trial dates and financial records are unchanged. No lead assignment/notification automation is included.
+- 587 unit tests passed under Asia/Kolkata, TypeScript and targeted ESLint passed, 309 overlay checksums verified. Staged build/typecheck, all 257 pages and 23 smoke checks passed. Read-only production check found October-to-date Leads 40 and Next Time 1372 at release time.
+- Both aliases verified after scoped activation. Authenticated production screen has not been independently inspected; counts were verified read-only against production, and public/auth routes checked separately.
+- No migrations, payment activation, customer messages, credentials or cron changes. Preserve this exact source and the preceding overlays; do not default-redeploy main or reuse a historical controller baseline.
+
+## Previous verified production checkpoint — 26 October 2026 (superseded)
+
 - Both domains verified on `dpl_BrymVmZPNGoB2BWJVEC2aPzqXD91`, actual application source `798c082ec5d1f379b1e3c8a7b3396a18c9ad9934`, branch `codex/meta-audience-details-20261026`, PR #85.
 - Audience actions now opens a native, keyboard-accessible disclosure with exact Meta field/count details and interpretation notes. Preserves the full Preleads and website source below. Payment work in PR #84 is excluded.
 - Production `TEMPLATE_CHECKOUT_ENABLED` set to `false` for this authorized UI-only release; no provider credentials changed. No migrations, messages, charges, ad writes or cron-setting changes.
