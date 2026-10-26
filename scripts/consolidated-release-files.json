@@ -102,6 +102,16 @@
       "after": "5d1addd3d1bf8f54139233419f87d2932e37af9a6b520c959b188b9362457c47"
     },
     {
+      "path": "scripts/crm-focus-audit.mjs",
+      "before": null,
+      "after": "ae1d65fe3b01ef881ceebafd2e9ed69167a88a53ae1dead6ecc1a2b47b26c0ef"
+    },
+    {
+      "path": "scripts/crm-month-preflight.mjs",
+      "before": null,
+      "after": "8cb1ca478c57c18a177f2e3b23a76fd9cf70d41c7e626491dde0f461e4af21a5"
+    },
+    {
       "path": "scripts/ensure-website-subscribers.mjs",
       "before": null,
       "after": "948f2b1750b95394b80f30a5359ec964c6a4bac41926819c50b7981740cf7aeb"
@@ -367,9 +377,14 @@
       "after": "b2f7f5c4ed50f2384db1c38694a8bf15cf6692524d1eedcd05b239ad8bc09466"
     },
     {
+      "path": "src/app/app/leads/(crm)/next-time/page.tsx",
+      "before": "3cf91e97db0c4316253d933a8b38471fc21366fb",
+      "after": "69d0cc1eb036be9c1b95c580a9de695cbaa1838a9c6b578bf8a7e46b47d7ab74"
+    },
+    {
       "path": "src/app/app/leads/(crm)/page.tsx",
       "before": "0f23e9cf80928c25bbadd64991a54e44e7fb2f84",
-      "after": "0d20a8c7280e6b9ac053281291ef649ca251b01f46bf302faa13a1a86b5523dd"
+      "after": "ac580b2c9c90f2d494f9d0a9c93ef6dd2f5a01885507d86104dba715440d05c0"
     },
     {
       "path": "src/app/app/leads/drawer-actions.ts",
@@ -924,7 +939,7 @@
     {
       "path": "src/components/saas/leads-crm-workspace.tsx",
       "before": "7357f15b4af05461fbe21ffe7ba8066461ad78f8",
-      "after": "6142f1120ba347a19969b58248f059cf277d031ae9842f9c7b054c845b9be4ca"
+      "after": "6dc0e75b9b9f449a63ea273f84ca65fbe30728b9f9ccb8e8d5a125c02549affc"
     },
     {
       "path": "src/components/saas/leads-source-settings-panel.tsx",
@@ -1199,7 +1214,7 @@
     {
       "path": "src/lib/leads/crm-module-stats.ts",
       "before": "eaa78f18ddce85926cc4395d1d638dbb37f8a5ba",
-      "after": "97a55f1fda777a2221e205144a81de552b36fff63e8c22df16bd23fadf0d2ea9"
+      "after": "9da2a8ac3842bf319081e6f717e9116797582e051faf34941192c33037952b65"
     },
     {
       "path": "src/lib/leads/drawer-request.test.ts",
@@ -1230,6 +1245,21 @@
       "path": "src/lib/leads/meeting-reminders.ts",
       "before": "d0edc4e04fbaf01fb55f8c0869edebe446cf43d5",
       "after": "595a4b728af4583be132564fb32e2c6a0845dd6e92a9518b39539e55adeebdaf"
+    },
+    {
+      "path": "src/lib/leads/month-focus.test.ts",
+      "before": null,
+      "after": "b854705f1e4e3af8086a3ba6f52cab526a9e67c67d0281ead25edc0d16829b5a"
+    },
+    {
+      "path": "src/lib/leads/month-focus.ts",
+      "before": null,
+      "after": "5bb61421c5d97a39afe2c380e0d9420bde896bd0780922ad6aa52a9423c3c3af"
+    },
+    {
+      "path": "src/lib/leads/queries.ts",
+      "before": "5535510a8ffd1678d890282124c6385c2a122ed8",
+      "after": "15a19649070e102f3b27ab5be3878e41d10c5674bac4f95a8681ce155b3c786e"
     },
     {
       "path": "src/lib/leads/search.test.ts",

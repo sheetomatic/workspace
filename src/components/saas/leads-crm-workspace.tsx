@@ -711,14 +711,14 @@ export function LeadsCrmWorkspace({
             <p className="leads-machine-muted">
               {committedSearch
                 ? pending
-                  ? "Searching all leads…"
+                  ? "Searching this month’s leads…"
                   : "No leads match this search."
                 : "No leads match this filter."}
             </p>
             {workspaceTotal > 0 && period !== "all" && !searchDraft.trim() ? (
               <p className="leads-machine-muted">
-                {workspaceTotal} in workspace.{" "}
-                <Link href="/app/leads?period=all&view=board">View all</Link>
+                {workspaceTotal} this month.{" "}
+                <Link href="/app/leads/next-time">Older leads in Next Time</Link>
               </p>
             ) : null}
           </div>
@@ -773,16 +773,16 @@ export function LeadsCrmWorkspace({
                 <td colSpan={bulkMode ? 9 : 8}>
                   <div className="leads-empty-state">
                     <p className="leads-machine-muted">
-                      {searchUpdating ? "Checking all saved CRM leads…" : committedSearch
+                      {searchUpdating ? "Checking this month’s CRM leads…" : committedSearch
                         ? pending
-                          ? "Searching all leads…"
+                          ? "Searching this month’s leads…"
                           : "No leads match this search."
                         : "No leads match this filter."}
                     </p>
                     {workspaceTotal > 0 && period !== "all" && !searchDraft.trim() ? (
                       <p className="leads-machine-muted">
-                        {workspaceTotal} in workspace.{" "}
-                        <Link href="/app/leads?period=all">View all</Link>
+                        {workspaceTotal} this month.{" "}
+                        <Link href="/app/leads/next-time">Older leads in Next Time</Link>
                       </p>
                     ) : null}
                     {workspaceTotal === 0 && !searchDraft.trim() ? (

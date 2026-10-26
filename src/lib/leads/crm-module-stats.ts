@@ -1,6 +1,8 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { currentLeadMonth, olderLeadWhere } from "@/lib/leads/month-focus";
+import { leadCapturedAtWhere } from "@/lib/leads/period";
 import {
   countCrmMeetings,
   istYmd,
@@ -31,20 +33,21 @@ export async function getCrmModuleNavCounts(
     campaigns,
   ] = await Promise.all([
     prisma.inboundLead.count({
-      where: {
+      where: mergeLeadContactWhere({
         organizationId,
         archivedAt: null,
         mergedIntoId: null,
         status: { notIn: NEXT_TIME_LEAD_STATUSES },
-      },
+        ...leadCapturedAtWhere(currentLeadMonth(now)),
+      }),
     }),
     prisma.inboundLead.count({
-      where: {
+      where: mergeLeadContactWhere({
         organizationId,
         archivedAt: null,
         mergedIntoId: null,
-        status: { in: NEXT_TIME_LEAD_STATUSES },
-      },
+        ...olderLeadWhere(now),
+      }),
     }),
     prisma.inboundLeadFollowUp.count({
       where: {
@@ -184,15 +187,16 @@ export async function listCrmPayments(organizationId: string, take = 100) {
 
 export async function listCrmNextTimeLeads(
   organizationId: string,
-  options?: { take?: number; assignedToId?: string },
+  options?: { take?: number; skip?: number; assignedToId?: string },
 ) {
   return prisma.inboundLead.findMany({
     where: mergeLeadContactWhere({
       organizationId,
-      status: { in: NEXT_TIME_LEAD_STATUSES },
+      ...olderLeadWhere(),
       ...(options?.assignedToId ? { assignedToId: options.assignedToId } : {}),
     }),
-    orderBy: [{ modifiedAt: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ modifiedAt: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+    skip: options?.skip ?? 0,
     take: options?.take ?? 200,
     select: {
       id: true,
@@ -216,6 +220,12 @@ export async function listCrmNextTimeLeads(
       assignedTo: { select: { id: true, name: true, email: true } },
     },
   });
+}
+
+export async function countCrmNextTimeLeads(organizationId: string, assignedToId?: string) {
+  return prisma.inboundLead.count({ where: mergeLeadContactWhere({
+    organizationId, ...olderLeadWhere(), ...(assignedToId ? { assignedToId } : {}),
+  }) });
 }
 
 export async function getCrmMeetingsStats(organizationId: string) {

@@ -52,7 +52,8 @@ function run(command, args) {
 run('npm', ['ci', '--include=dev', '--ignore-scripts']);
 run('npm', ['run', 'db:generate']);
 run('node', ['scripts/release-schema-preflight.mjs']);
+run('node', ['scripts/crm-month-preflight.mjs']);
 run('node', ['scripts/meta-report-preflight.mjs']);
 run('npx', ['next', 'build', '--webpack']);
 run('node', ['scripts/release-http-smoke.mjs']);
-console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; Audience actions UI only; no migrations or payment activation`);
+console.log(`[consolidated-release] Verified source ${revision}; baseline ${manifest.baseline}; CRM month focus only; no migrations or payment activation`);

@@ -2,7 +2,6 @@ import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { LeadsCrmWorkspace } from "@/components/saas/leads-crm-workspace";
-import { LeadsPeriodToolbar } from "@/components/saas/leads-period-toolbar";
 import { TaskPageToolbar } from "@/components/saas/task-page-toolbar";
 import "@/components/saas/leads-machine.css";
 import { runLeadsBackgroundMaintenance } from "@/lib/leads/backfill";
@@ -18,7 +17,7 @@ import { LeadsSheetSyncButton } from "@/components/saas/leads-sheet-sync-button"
 import { ensureLeadConnections } from "@/lib/leads/ingest";
 import { parseCrmDrawerTab } from "@/lib/leads/crm-open";
 import { parseLeadsListParams } from "@/lib/leads/list-params";
-import { parseLeadsPeriodParams } from "@/lib/leads/period";
+import { currentLeadMonth } from "@/lib/leads/month-focus";
 import {
   getGoogleSheetsLeadConnection,
   getInboundLeadForCrmDrawer,
@@ -79,7 +78,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
   }
 
   const params = await searchParams;
-  const period = parseLeadsPeriodParams(params);
+  const period = currentLeadMonth();
   const listParams = parseLeadsListParams(params);
   const canManage = hasMinimumRole(user.role, "MANAGER");
   // Admins/owners (and platform super-admins) see the full workspace;
@@ -223,12 +222,9 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         status: listParams.status,
         category: listParams.category,
         q: listParams.q,
-        includeArchived: listParams.includeArchived || Boolean(listParams.q),
+        includeArchived: false,
         assignedToId: leadScope?.assignedToId,
-        excludeStatuses:
-          listParams.q || listParams.status
-            ? undefined
-            : NEXT_TIME_LEAD_STATUSES,
+        excludeStatuses: NEXT_TIME_LEAD_STATUSES,
       }),
       listWorkspaceMembers(user.organizationId),
       listLeadServiceCatalog(user.organizationId),
@@ -306,7 +302,7 @@ export default async function LeadsMachinePage({ searchParams }: PageProps) {
         }
       />
 
-      <LeadsPeriodToolbar period={period} />
+      <p>This month to date (IST). Older leads are in <Link href="/app/leads/next-time">Next Time</Link>; their history is preserved.</p>
 
       <Suspense fallback={null}>
         <LeadsCrmSecondary
