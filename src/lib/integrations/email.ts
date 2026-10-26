@@ -25,6 +25,8 @@ export async function sendPlainEmail(params: {
   /** Optional HTML body (hyperlinks, RSVP copy). */
   html?: string;
   attachments?: EmailAttachment[];
+  /** Stable operation key; retries must use the identical message payload. */
+  idempotencyKey?: string;
 }): Promise<EmailSendResult> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.TASK_EMAIL_FROM?.trim();
@@ -43,9 +45,11 @@ export async function sendPlainEmail(params: {
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
+    signal: AbortSignal.timeout(15000),
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      ...(params.idempotencyKey ? { "Idempotency-Key": params.idempotencyKey } : {}),
     },
     body: JSON.stringify({
       from,

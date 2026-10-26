@@ -428,6 +428,10 @@ async function sessionAllowsApi(user: SessionUser) {
     getWorkspaceOrganization(user.organizationId),
   ]);
   user.enabledBciSubModules = grantedSuiteParts(user, prefs?.enabledBciSubModules, organization?.allowedSuiteParts);
+  if (organization?.product === "TASKS" && !organization.isPrimary && user.organizationStatus === "ACTIVE") {
+    const purchase = await prisma.templateCheckout.findUnique({ where: { activatedOrganizationId: user.organizationId }, select: { accessEndsAt: true } });
+    if (purchase?.accessEndsAt && purchase.accessEndsAt.getTime() <= Date.now()) user.organizationStatus = "HOLD";
+  }
   const pathname = await getRequestPathname();
   if (pathname.startsWith("/api/") && !canAccessWorkspacePath(user, pathname)) return null;
   if (

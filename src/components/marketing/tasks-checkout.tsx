@@ -41,6 +41,7 @@ export function TasksCheckout({ enabled }: Props) {
       const response = await fetch("/api/tasks/checkout", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", Authorization: `Bearer ${currentToken}` }, body: JSON.stringify({ period, users, whatsappApi, buyer, acceptedTerms: true }) });
       const order = await response.json() as RzpOrder & { error?: string };
       if (!response.ok) throw new Error(order.error || "Checkout could not be created.");
+      if (order.paid) { setMessage(`This order is already paid. Invoice ${order.invoiceNumber ?? "is being prepared"}. Do not pay again; sign in with your billing email or contact support with order ${order.id}.`); return; }
       if (!order.gatewayOrderId || !order.keyId || order.paymentState === "creating") throw new Error("Order creation is pending. Do not retry payment yet; contact support with order reference " + order.id + ".");
       const gateway = new Razorpay({ key: order.keyId, order_id: order.gatewayOrderId, amount: order.totalPaise, currency: "INR", name: "Sheetomatic Technologies", description: `Tasks Management · ${period} plan`, prefill: { name: buyer.name, email: buyer.email, contact: buyer.phone }, handler: async (result: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
         setMessage("Payment received by checkout; verifying with Razorpay. The GST invoice is issued only after server verification.");
@@ -48,7 +49,7 @@ export function TasksCheckout({ enabled }: Props) {
           const verified = await fetch(`/api/templates/checkout/${order.id}`, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", Authorization: `Bearer ${currentToken}` }, body: JSON.stringify(result) });
           const data = await verified.json();
           if (!verified.ok) throw new Error(data.error || "Payment verification is pending.");
-          setMessage(`Payment verified. Invoice ${data.invoiceNumber} will be emailed to ${buyer.email}.`);
+          setMessage(`Payment verified. ${data.activationState === "active" ? "Your dedicated Tasks workspace is active. Sign in with your billing email; new users can use Forgot password." : "Workspace activation is pending; do not pay again."} Invoice ${data.invoiceNumber}: delivery to ${buyer.email} is being processed.`);
         } catch (error) { setMessage(error instanceof Error ? error.message : "Payment verification is pending. Check status before retrying."); }
       }, modal: { ondismiss: () => setMessage("Checkout closed. No paid invoice is created unless Razorpay confirms a captured payment.") } });
       gateway.open();
@@ -77,6 +78,7 @@ export function TasksCheckout({ enabled }: Props) {
         <label>GSTIN (optional)<input autoComplete="off" maxLength={15} value={buyer.gstin} onChange={e => setBuyer({ ...buyer, gstin: e.target.value.toUpperCase() })} /></label>
       </fieldset>
       <dl className="tasks-checkout-summary"><div><dt>{period === "monthly" ? `Tasks · ${billedUsers} billed users × ₹300` : `Tasks · ${users} users × ₹2,500/year`}</dt><dd>{format(tasksSubtotal)}</dd></div>{whatsappApi && <div><dt>WhatsApp API · 1 year</dt><dd>{format(10000)}</dd></div>}<div><dt>Subtotal before GST</dt><dd>{format(subtotal)}</dd></div><div><dt>GST estimate · 18%</dt><dd>{format(gst)}</dd></div><div className="tasks-checkout-grand-total"><dt>Estimated total</dt><dd>{format(subtotal + gst)}</dd></div></dl>
+      <p>This checkout creates a new, dedicated Tasks workspace for your billing email. It does not renew or upgrade an existing workspace. <Link href="/guides/tasks-setup">Read the setup guide</Link>.</p>
       <label className="tasks-checkout-consent"><input type="checkbox" required checked={accepted} onChange={e => setAccepted(e.target.checked)} />I understand monthly pricing has an 8-user minimum; yearly pricing is per selected user; GST is added; and this is a fixed-term purchase with manual renewal, not an automatic recurring charge. I agree to the <Link href="/terms" target="_blank">terms</Link>.</label>
       {!enabled && <p className="tasks-checkout-unavailable" role="status">Online payment is currently unavailable while payment configuration and seller GST verification are completed. No payment will be collected. Please enquire below.</p>}
       {message && <p className="tasks-checkout-message" role="status">{message}</p>}

@@ -225,6 +225,7 @@ enum WorkspaceLinkType {
 model Organization {
   id              String                   @id @default(cuid())
   name            String
+  paidTasksCheckouts TemplateCheckout[] @relation("TasksCheckoutWorkspace")
   slug            String                   @unique
   industry        String?
   googleSheetId   String?
@@ -4327,6 +4328,11 @@ model TemplateCheckout {
   paidAt           DateTime?
   invoiceNumber    String?  @unique
   emailSentAt      DateTime?
+  emailFirstAttemptAt DateTime?
+  activatedOrganizationId String? @unique
+  activatedOrganization Organization? @relation("TasksCheckoutWorkspace", fields: [activatedOrganizationId], references: [id], onDelete: Restrict)
+  activatedAt DateTime?
+  accessEndsAt DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
