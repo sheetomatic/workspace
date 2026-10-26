@@ -1,4 +1,13 @@
-# Current verified production checkpoint — 25 October 2026
+# Current verified production checkpoint — 26 October 2026
+
+- Both domains verified on `dpl_BrymVmZPNGoB2BWJVEC2aPzqXD91`, actual application source `798c082ec5d1f379b1e3c8a7b3396a18c9ad9934`, branch `codex/meta-audience-details-20261026`, PR #85.
+- Audience actions now opens a native, keyboard-accessible disclosure with exact Meta field/count details and interpretation notes. Preserves the full Preleads and website source below. Payment work in PR #84 is excluded.
+- Production `TEMPLATE_CHECKOUT_ENABLED` set to `false` for this authorized UI-only release; no provider credentials changed. No migrations, messages, charges, ad writes or cron-setting changes.
+- 582 tests passed, including Chromium disclosure checks at 1440/390/320 with click, Enter, Space, empty state, no JavaScript and no overflow. Lint, 303 overlay checksums, staged typecheck/full 257-page build, read-only schema/Meta reporting checks and 23 smoke checks passed.
+- Both aliases re-read after scoped assignment. Authenticated production browser interaction is not independently verified; component interaction passed in isolated browser tests and the production route remains login-protected.
+- Controller `/workspace/audience-deployment-control.mjs` is historical and baseline-specific. Do not reuse it without checking fresh aliases and preserving the current source. Never promote the earlier read-only payment preflight job.
+
+## Previous verified production checkpoint — 25 October 2026 (superseded)
 
 - Both domains now verified on `dpl_9a88nq7gBnWHsm8hn4rbmVhwtc8m`, application `4b1898688f3c6b3ea122b7935ee2251cf05bc0b8`, branch `codex/preleads-hub-20261025`, PR #83.
 - Shared Preleads tabs (Meta, Website Traffic, Subscribers), matching canvas, ad-level performance comparison, public double-opt-in subscription form and admin newsletter stats. Newsletter signups are not Workspace registrations. Per-ad rows are historical Insights, not live delivery states; partial results beyond 100 are disclosed.
