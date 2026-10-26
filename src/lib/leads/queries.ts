@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { currentLeadMonth } from "@/lib/leads/month-focus";
 import { mergeLeadContactWhere } from "@/lib/leads/contact-validation";
 import { getFmsStepSummaryForLead } from "@/lib/leads/fms-bridge";
 import type { LeadsSortOrder } from "@/lib/leads/list-params";
@@ -61,6 +62,7 @@ export async function getInboundLeadWorkspaceTotal(
     where: mergeLeadContactWhere({
       organizationId,
       ...assigneeWhere(scope),
+      ...leadCapturedAtWhere(currentLeadMonth()),
       status: { notIn: NEXT_TIME_LEAD_STATUSES },
     }),
   });
@@ -269,8 +271,8 @@ export async function listInboundLeadsForPeriodPaginated(
   const where = mergeLeadContactWhere(
     {
       organizationId,
-      // Name/phone search is workspace-wide — period filter hid older leads.
-      ...(query ? {} : leadCapturedAtWhere(period)),
+      AND: [leadCapturedAtWhere(period), ...(options.excludeStatuses?.length
+        ? [{ status: { notIn: options.excludeStatuses } }] : [])],
       ...(options.assignedToId ? { assignedToId: options.assignedToId } : {}),
       ...(options.status
         ? { status: options.status }

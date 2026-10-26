@@ -4,7 +4,8 @@ import "@/components/saas/leads-machine.css";
 import { requireCrmSubModule } from "@/lib/crm/crm-access";
 import { formatInr, leadCategoryLabel } from "@/lib/leads/categories";
 import { buildLeadAiReengageMessage } from "@/lib/leads/ai-reengage-message";
-import { listCrmNextTimeLeads } from "@/lib/leads/crm-module-stats";
+import { listCrmNextTimeLeads, countCrmNextTimeLeads } from "@/lib/leads/crm-module-stats";
+import Link from "next/link";
 import { hasMinimumRole } from "@/lib/permissions";
 import { requireSession } from "@/lib/require-session";
 
@@ -32,14 +33,19 @@ function formatLeadDate(value: Date | null) {
   });
 }
 
-export default async function CrmNextTimePage() {
+export default async function CrmNextTimePage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const user = await requireSession(undefined, { module: "CRM" });
   await requireCrmSubModule(user, "nextTime");
   const canManage = hasMinimumRole(user.role, "MANAGER");
   const canSeeAllLeads =
     user.isSuperAdmin || hasMinimumRole(user.role, "ADMIN");
+  const params = await searchParams;
+  const total = await countCrmNextTimeLeads(user.organizationId, canSeeAllLeads ? undefined : user.id);
+  const pages = Math.max(1, Math.ceil(total / 200));
+  const page = Math.min(pages, Math.max(1, Math.floor(Number(params.page) || 1)));
   const rows = await listCrmNextTimeLeads(user.organizationId, {
     take: 200,
+    skip: (page - 1) * 200,
     assignedToId: canSeeAllLeads ? undefined : user.id,
   });
   const totalValue = rows.reduce((sum, lead) => sum + leadValue(lead), 0);
@@ -96,16 +102,21 @@ export default async function CrmNextTimePage() {
   return (
     <CrmSubmoduleShell
       title="Next Time"
-      description="Parked leads to revisit later. They stay out of the Leads list until you move the status back."
+      description="Leads from before this month, plus parked leads. Original statuses, notes and payment history are unchanged."
       kpis={[
-        { label: "Parked", value: String(rows.length), accent: "warning" },
+        { label: "Next Time leads", value: String(total), accent: "warning" },
         {
-          label: "Quoted / pipe value",
+          label: "Quoted / pipe value (this page)",
           value: formatInr(totalValue),
           accent: "blue",
         },
       ]}
     >
+      <nav aria-label="Next Time pages">
+        {page > 1 && <Link href={`?page=${page - 1}`}>Previous</Link>}
+        {" "}Page {page} of {pages} · {total} leads{" "}
+        {page < pages && <Link href={`?page=${page + 1}`}>Next</Link>}
+      </nav>
       <CrmClientGroups
         groups={groups}
         columns={["Company", "Category", "Requirement", "Last updated", "Value"]}
