@@ -23,6 +23,7 @@ import {
   type GatewayPayment,
 } from "./gateway";
 import { templateInvoiceHtml } from "./invoice";
+import { activatePaidTasksCheckout } from "@/lib/tasks/paid-activation";
 import { tasksCheckoutLines, tasksCheckoutTotals, TASKS_SAC, type TasksBillingPeriod } from "@/lib/tasks/checkout-commerce";
 
 export type CheckoutSnapshot = {
@@ -275,7 +276,7 @@ export async function recordCapturedPayment(
   if (order.paidAt) {
     if (order.gatewayPaymentId !== paymentId)
       throw new Error("Payment does not match this invoice.");
-    return order;
+    return (order.snapshot as unknown as CheckoutSnapshot)?.kind === "tasks" ? activatePaidTasksCheckout(order.id) : order;
   }
   const payment = await razorpayRequest<GatewayPayment>(
     `payments/${paymentId}`,
@@ -310,18 +311,28 @@ export async function recordCapturedPayment(
   // Never acknowledge that second payment as the invoice's recorded payment.
   if (paid.gatewayPaymentId !== paymentId)
     throw new Error("Payment does not match this invoice.");
-  return paid;
+  return (paid.snapshot as unknown as CheckoutSnapshot)?.kind === "tasks" ? activatePaidTasksCheckout(paid.id) : paid;
 }
 
 export async function emailPaidCheckout(orderId: string) {
-  const order = await prisma.templateCheckout.findUniqueOrThrow({
+  // Persist the first attempt before the network call, including uncertain outcomes.
+  // Never retry outside the provider's 24h idempotency retention without reconciliation.
+  await prisma.templateCheckout.updateMany({ where: { id: orderId, paidAt: { not: null }, invoiceNumber: { not: null }, emailFirstAttemptAt: null, emailSentAt: null }, data: { emailFirstAttemptAt: new Date() } });
+  return prisma.$transaction(async tx => {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`checkout-email:${orderId}`}, 0))`;
+  const order = await tx.templateCheckout.findUniqueOrThrow({
     where: { id: orderId },
   });
   if (!order.paidAt || !order.invoiceNumber || order.emailSentAt) return;
+  if (!order.emailFirstAttemptAt || Date.now() - order.emailFirstAttemptAt.getTime() >= 23 * 60 * 60_000) throw new Error("Invoice delivery needs reconciliation before another send.");
   const s = order.snapshot as unknown as CheckoutSnapshot;
+  const isTasks = s.kind === "tasks";
+  if (isTasks && !order.activatedOrganizationId) throw new Error("Payment received; activation is pending. Do not pay again.");
+  const workspace = isTasks ? await tx.organization.findUniqueOrThrow({ where: { id: order.activatedOrganizationId! }, select: { slug: true } }) : null;
   const result = await sendPlainEmail({
     toEmail: s.buyer.email,
-    subject: `Your Sheetomatic templates · ${order.invoiceNumber}`,
+    subject: `Your Sheetomatic ${isTasks ? "Tasks workspace" : "templates"} · ${order.invoiceNumber}`,
+    idempotencyKey: `checkout-invoice-v1/${order.id}`,
     attachments: [
       {
         filename: `${order.invoiceNumber.replaceAll("/", "-")}.html`,
@@ -332,19 +343,25 @@ export async function emailPaidCheckout(orderId: string) {
     text: [
       `Hello ${s.buyer.name},`,
       "",
-      "Your payment is verified. Your template copy links:",
-      ...s.lines.flatMap((l) => (l.copyLink ? [`${l.name}: ${l.copyLink}`] : [])),
+      ...(workspace ? [
+        "Your payment is verified and your dedicated Tasks workspace is active.",
+        `Sign in: https://workspace.sheetomatic.com/login?org=${encodeURIComponent(workspace.slug)}`,
+        "Use your existing password. If you do not have one, use Forgot password with this email address to receive a secure reset link.",
+        "Visual setup guide: https://sheetomatic.com/guides/tasks-setup",
+        `Access until: ${order.accessEndsAt?.toISOString()} (UTC). Fixed term; manual renewal, no automatic charge.`,
+        "WhatsApp API add-on setup and provider usage are separate; no WhatsApp delivery is promised until configured.",
+      ] : ["Your payment is verified. Your template copy links:", ...s.lines.flatMap((l) => (l.copyLink ? [`${l.name}: ${l.copyLink}`] : []))]),
       "",
       `Invoice: ${order.invoiceNumber}`,
       `Paid: INR ${(order.totalPaise / 100).toFixed(2)} (including GST).`,
       "Your GST tax invoice is attached. Open it and choose Print → Save as PDF, or download it from your checkout confirmation page.",
-      "Standard templates only. Customisation, setup services and third-party subscriptions are not included.",
+      isTasks ? "Your purchased Tasks seats and term are shown on the invoice." : "Standard templates only. Customisation, setup services and third-party subscriptions are not included.",
       "For your own business use only; not for resale or redistribution.",
       `Support: founder@sheetomatic.com. Order: ${order.id}`,
     ].join("\n"),
   });
   if (result.sent)
-    await prisma.templateCheckout.update({
+    await tx.templateCheckout.update({
       where: { id: order.id },
       data: { emailSentAt: new Date() },
     });
@@ -352,6 +369,7 @@ export async function emailPaidCheckout(orderId: string) {
     throw new Error(
       "Delivery email pending; retry after email configuration is restored.",
     );
+  }, { timeout: 20_000, maxWait: 20_000 });
 }
 
 export function publicCheckout(
@@ -361,6 +379,8 @@ export function publicCheckout(
   return {
     id: order.id,
     paid: Boolean(order.paidAt),
+    activationState: s.kind === "tasks" ? (order.activatedOrganizationId ? "active" : order.paidAt ? "pending" : "awaiting_payment") : null,
+    setupGuide: s.kind === "tasks" && order.activatedOrganizationId ? "/guides/tasks-setup" : null,
     paymentState: order.paidAt ? "paid" : order.gatewayOrderId ? "ready" : "creating",
     invoiceNumber: order.invoiceNumber,
     totalPaise: order.totalPaise,
